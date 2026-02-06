@@ -60,3 +60,22 @@
 .ag-theme-alpine ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+.rfq-grid-wrapper {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 5px;
+}
+
+.cell-editable {
+  background-color: #fffde7;
+}
+
+.ag-theme-alpine .ag-header-cell-label {
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.ag-theme-alpine .ag-row:hover {
+  background-color: #e3f2fd;
+}

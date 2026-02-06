@@ -1,234 +1,161 @@
-import { useMemo, useRef, useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import type { ColDef, RowStyle, RowClassParams } from 'ag-grid-community';
+import React, { useCallback, useMemo, useState} from "react";
+import { createRoot } from "react-dom/client";
+import { AgGridReact } from "ag-grid-react";
+import type { ColDef, GetRowIdFunc } from "ag-grid-community";
+import {
+  ModuleRegistry,
+  ClientSideRowModelModule,
+  NumberEditorModule,
+  TextEditorModule,
+  ValidationModule,
+} from "ag-grid-community";
+import { FormulaModule } from "ag-grid-enterprise";
 
-import { ModuleRegistry } from 'ag-grid-community';
-import { ClientSideRowModelModule } from 'ag-grid-community';
+// AG Grid CSS
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
-import '../../css/rfq-grid.css';
+// Register AG Grid modules
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  FormulaModule,
+  NumberEditorModule,
+  TextEditorModule,
+  ValidationModule,
+]);
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
-
-/* ---------------- TYPES ---------------- */
-
-type LevelType = 'Panel' | 'DieGroup' | 'Component';
-
-interface RfqRow {
-  level: LevelType;
-  name: string;
-  qty: number | '';
-  netWt: number | '';
-  rate: number | '';
-  totalCost: number | '';
+// ---------------- TYPES ----------------
+interface PlantRowData {
+  id: number;
+  plant: string;
+  productionCost: number;
+  quantity: number;
+  subtotal: string; 
+  tax: string;      
+  total: string;    
 }
 
-/* ---------------- DATA ---------------- */
 
-const initialRowData: RfqRow[] = [
-  { level: 'Panel', name: 'P1', qty: '', netWt: '', rate: '', totalCost: '' },
-
-  { level: 'DieGroup', name: 'DG-01', qty: '', netWt: '', rate: '', totalCost: '' },
-  { level: 'Component', name: 'Base Plate', qty: 2, netWt: 12.5, rate: 180, totalCost: 0 },
-  { level: 'Component', name: 'Guide Bush', qty: 4, netWt: 1.2, rate: 220, totalCost: 0 },
-
-  { level: 'DieGroup', name: 'DG-02', qty: '', netWt: '', rate: '', totalCost: '' },
-  { level: 'Component', name: 'Punch', qty: 6, netWt: 0.8, rate: 300, totalCost: 0 },
-  { level: 'Component', name: 'Die Insert', qty: 2, netWt: 5.0, rate: 260, totalCost: 0 },
-];
-
-/* ---------------- FILTER PARAMS ---------------- */
-
-const textFilterParams = {
-  filterOptions: [
-    'contains',
-    'notContains',
-    'equals',
-    'notEqual',
-    'startsWith',
-    'endsWith',
-    'blank',
-    'notBlank',
-  ],
-  defaultOption: 'contains',
-  maxNumConditions: 2, // enables AND / OR
+const valueFormatter = (params: { value: any }) => {
+  const val = Number(params.value);
+  return isNaN(val) ? params.value : `₹ ${val.toFixed(2)}`;
 };
 
-const numberFilterParams = {
-  filterOptions: [
-    'equals',
-    'notEqual',
-    'lessThan',
-    'lessThanOrEqual',
-    'greaterThan',
-    'greaterThanOrEqual',
-    'inRange',
-    'blank',
-    'notBlank',
-  ],
-  defaultOption: 'equals',
-  maxNumConditions: 2, // enables AND / OR
-};
 
-/* ---------------- COMPONENT ---------------- */
+const MahindraPlantGrid: React.FC = () => {
+  const containerStyle = useMemo(() => ({ width: "100%", height: "100vh" }), []);
+  const gridStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
 
-const RfqHierarchyGrid = () => {
-  const gridRef = useRef<AgGridReact<RfqRow>>(null);
-  const [rowData, setRowData] = useState<RfqRow[]>(initialRowData);
-
-  /* ---------------- COLUMNS ---------------- */
-
-  const columnDefs = useMemo<ColDef<RfqRow>[]>(() => [
+  const [rowData] = useState<PlantRowData[]>([
     {
-      field: 'level',
-      width: 120,
-      filter: 'agTextColumnFilter',
-      filterParams: textFilterParams,
+      id: 1,
+      plant: "Pune",
+      productionCost: 125000,
+      quantity: 4,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(1))*REF(COLUMN("quantity"),ROW(1))',
+      tax: '=REF(COLUMN("subtotal"),ROW(1))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(1))+REF(COLUMN("tax"),ROW(1))',
     },
     {
-      field: 'name',
+      id: 2,
+      plant: "Mumbai",
+      productionCost: 98000,
+      quantity: 6,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(2))*REF(COLUMN("quantity"),ROW(2))',
+      tax: '=REF(COLUMN("subtotal"),ROW(2))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(2))+REF(COLUMN("tax"),ROW(2))',
+    },
+    {
+      id: 3,
+      plant: "Nagpur",
+      productionCost: 76000,
+      quantity: 10,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(3))*REF(COLUMN("quantity"),ROW(3))',
+      tax: '=REF(COLUMN("subtotal"),ROW(3))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(3))+REF(COLUMN("tax"),ROW(3))',
+    },
+    {
+      id: 4,
+      plant: "Chennai",
+      productionCost: 210000,
+      quantity: 3,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(4))*REF(COLUMN("quantity"),ROW(4))',
+      tax: '=REF(COLUMN("subtotal"),ROW(4))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(4))+REF(COLUMN("tax"),ROW(4))',
+    },
+    {
+      id: 5,
+      plant: "Delhi",
+      productionCost: 150000,
+      quantity: 2,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(5))*REF(COLUMN("quantity"),ROW(5))',
+      tax: '=REF(COLUMN("subtotal"),ROW(5))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(5))+REF(COLUMN("tax"),ROW(5))',
+    },
+    {
+      id: 6,
+      plant: "Hyderabad",
+      productionCost: 100000,
+      quantity: 3,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(6))*REF(COLUMN("quantity"),ROW(6))',
+      tax: '=REF(COLUMN("subtotal"),ROW(6))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(6))+REF(COLUMN("tax"),ROW(6))',
+    },
+    {
+      id: 7,
+      plant: "Kolkata",
+      productionCost: 245000,
+      quantity: 1,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(7))*REF(COLUMN("quantity"),ROW(7))',
+      tax: '=REF(COLUMN("subtotal"),ROW(7))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(7))+REF(COLUMN("tax"),ROW(7))',
+    },
+    {
+      id: 8,
+      plant: "Bengaluru",
+      productionCost: 180000,
+      quantity: 4,
+      subtotal: '=REF(COLUMN("productionCost"),ROW(8))*REF(COLUMN("quantity"),ROW(8))',
+      tax: '=REF(COLUMN("subtotal"),ROW(8))*0.18',
+      total: '=REF(COLUMN("subtotal"),ROW(8))+REF(COLUMN("tax"),ROW(8))',
+    },
+  ]);
+
+  const getRowId: GetRowIdFunc = useCallback((params) => String(params.data.id), []);
+
+  const [columnDefs] = useState<ColDef<PlantRowData>[]>([
+    { field: "plant" },
+    { field: "productionCost", headerName: "Production Cost", valueFormatter },
+    { field: "quantity", headerName: "Qty", maxWidth: 100 },
+    { field: "subtotal", valueFormatter, allowFormula: true },
+    { field: "tax", headerName: "Tax (18%)", valueFormatter, allowFormula: true },
+    { field: "total", valueFormatter, allowFormula: true },
+  ]);
+
+  const defaultColDef = useMemo<ColDef<PlantRowData>>(
+    () => ({
+      editable: true,
       flex: 1,
-      minWidth: 200,
-      filter: 'agTextColumnFilter',
-      filterParams: textFilterParams,
-    },
-    {
-      field: 'qty',
-      width: 110,
-      editable: p => p.data?.level === 'Component',
-      filter: 'agNumberColumnFilter',
-      filterParams: numberFilterParams,
-      valueParser: p => Number(p.newValue || 0),
-    },
-    {
-      field: 'netWt',
-      headerName: 'Net Wt',
-      width: 120,
-      editable: p => p.data?.level === 'Component',
-      filter: 'agNumberColumnFilter',
-      filterParams: numberFilterParams,
-      valueParser: p => Number(p.newValue || 0),
-    },
-    {
-      field: 'rate',
-      headerName: 'Rate/Kg',
-      width: 120,
-      editable: p => p.data?.level === 'Component',
-      filter: 'agNumberColumnFilter',
-      filterParams: numberFilterParams,
-      valueParser: p => Number(p.newValue || 0),
-    },
-    {
-      field: 'totalCost',
-      headerName: 'Total Cost',
-      width: 150,
-      filter: 'agNumberColumnFilter',
-      filterParams: numberFilterParams,
-      valueFormatter: p =>
-        typeof p.value === 'number' ? p.value.toFixed(2) : '',
-    },
-  ], []);
-
-  const defaultColDef = useMemo<ColDef>(() => ({
-    resizable: true,
-    sortable: true,
-    filter: true,
-    floatingFilter: true,
-  }), []);
-
-  /* ---------------- STYLES ---------------- */
-
-  const getRowStyle = (
-    params: RowClassParams<RfqRow>
-  ): RowStyle | undefined => {
-    if (params.data?.level === 'Panel') {
-      return {
-        fontWeight: '700',
-        backgroundColor: '#eef3ff',
-      };
-    }
-    if (params.data?.level === 'DieGroup') {
-      return {
-        fontWeight: '600',
-        backgroundColor: '#f7f9fc',
-      };
-    }
-    return undefined;
-  };
-
-  /* ---------------- CALCULATIONS ---------------- */
-
-  const recalcTotals = (rows: RfqRow[]) => {
-    // component totals
-    rows.forEach(r => {
-      if (r.level === 'Component') {
-        const qty = Number(r.qty || 0);
-        const netWt = Number(r.netWt || 0);
-        const rate = Number(r.rate || 0);
-        r.totalCost = qty * netWt * rate;
-      } else {
-        r.totalCost = '';
-      }
-    });
-
-    // die group totals
-    let currentGroup: RfqRow | null = null;
-    let sum = 0;
-
-    for (const r of rows) {
-      if (r.level === 'DieGroup') {
-        if (currentGroup) currentGroup.totalCost = sum;
-        currentGroup = r;
-        sum = 0;
-      }
-      if (r.level === 'Component') {
-        sum += Number(r.totalCost || 0);
-      }
-      if (r.level === 'Panel') {
-        if (currentGroup) currentGroup.totalCost = sum;
-        currentGroup = null;
-        sum = 0;
-      }
-    }
-    if (currentGroup) currentGroup.totalCost = sum;
-
-    // panel total
-    const panel = rows.find(r => r.level === 'Panel');
-    if (panel) {
-      panel.totalCost = rows
-        .filter(r => r.level === 'DieGroup')
-        .reduce((a, b) => a + Number(b.totalCost || 0), 0);
-    }
-  };
-
-  /* ---------------- EVENTS ---------------- */
-
-  const onCellValueChanged = () => {
-    const updated = [...rowData];
-    recalcTotals(updated);
-    setRowData(updated);
-    gridRef.current?.api.refreshCells({ force: true });
-  };
-
-  /* ---------------- RENDER ---------------- */
+    }),
+    []
+  );
 
   return (
-    <div className="rfq-page">
-      <div className="rfq-grid-wrapper ag-theme-alpine">
-        <AgGridReact<RfqRow>
-          ref={gridRef}
+    <div style={containerStyle} className="ag-theme-alpine">
+      <div style={gridStyle}>
+        <AgGridReact<PlantRowData>
           rowData={rowData}
+          getRowId={getRowId}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
-          getRowStyle={getRowStyle}
-          onCellValueChanged={onCellValueChanged}
-          suppressRowClickSelection
-          animateRows
         />
       </div>
     </div>
   );
 };
 
-export default RfqHierarchyGrid;
+export default MahindraPlantGrid;
+
+
+const root = createRoot(document.getElementById("root")!);
+root.render(<MahindraPlantGrid />);

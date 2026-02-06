@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import 'flag-icons/css/flag-icons.min.css';
 
 
 createRoot(document.getElementById('root')!).render(
