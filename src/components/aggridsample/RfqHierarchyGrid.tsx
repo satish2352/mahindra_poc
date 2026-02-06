@@ -1,13 +1,17 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
+import type { ColDef, RowStyle, RowClassParams } from 'ag-grid-community';
+
 import { ModuleRegistry } from 'ag-grid-community';
 import { ClientSideRowModelModule } from 'ag-grid-community';
-import { HyperFormula } from 'hyperformula';
 
-import type { ColDef, RowStyle, RowClassParams } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 import '../../css/rfq-grid.css';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
+
+/* ---------------- TYPES ---------------- */
 
 type LevelType = 'Panel' | 'DieGroup' | 'Component';
 
@@ -20,100 +24,109 @@ interface RfqRow {
   totalCost: number | '';
 }
 
+/* ---------------- DATA ---------------- */
+
 const initialRowData: RfqRow[] = [
   { level: 'Panel', name: 'P1', qty: '', netWt: '', rate: '', totalCost: '' },
+
   { level: 'DieGroup', name: 'DG-01', qty: '', netWt: '', rate: '', totalCost: '' },
   { level: 'Component', name: 'Base Plate', qty: 2, netWt: 12.5, rate: 180, totalCost: 0 },
   { level: 'Component', name: 'Guide Bush', qty: 4, netWt: 1.2, rate: 220, totalCost: 0 },
+
   { level: 'DieGroup', name: 'DG-02', qty: '', netWt: '', rate: '', totalCost: '' },
   { level: 'Component', name: 'Punch', qty: 6, netWt: 0.8, rate: 300, totalCost: 0 },
   { level: 'Component', name: 'Die Insert', qty: 2, netWt: 5.0, rate: 260, totalCost: 0 },
 ];
 
+/* ---------------- FILTER PARAMS ---------------- */
+
+const textFilterParams = {
+  filterOptions: [
+    'contains',
+    'notContains',
+    'equals',
+    'notEqual',
+    'startsWith',
+    'endsWith',
+    'blank',
+    'notBlank',
+  ],
+  defaultOption: 'contains',
+  maxNumConditions: 2, // enables AND / OR
+};
+
+const numberFilterParams = {
+  filterOptions: [
+    'equals',
+    'notEqual',
+    'lessThan',
+    'lessThanOrEqual',
+    'greaterThan',
+    'greaterThanOrEqual',
+    'inRange',
+    'blank',
+    'notBlank',
+  ],
+  defaultOption: 'equals',
+  maxNumConditions: 2, // enables AND / OR
+};
+
+/* ---------------- COMPONENT ---------------- */
+
 const RfqHierarchyGrid = () => {
   const gridRef = useRef<AgGridReact<RfqRow>>(null);
   const [rowData, setRowData] = useState<RfqRow[]>(initialRowData);
-  const hfRef = useRef<HyperFormula | null>(null);
-  const sheetIdRef = useRef<number | null>(null);
 
-  // Convert rows to sheet format
-  const rowsToSheet = (rows: RfqRow[]) => rows.map(r => [r.qty || 0, r.netWt || 0, r.rate || 0]);
-
-  useEffect(() => {
-    const hf = HyperFormula.buildEmpty({ licenseKey: 'non-commercial-and-evaluation' });
-    hfRef.current = hf;
-  
-    recalcTotals(initialRowData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* ---------------- COLUMNS ---------------- */
 
   const columnDefs = useMemo<ColDef<RfqRow>[]>(() => [
     {
       field: 'level',
       width: 120,
-      filter: 'agSetColumnFilter',
-      sortable: true,
-      resizable: true,
-      filterParams: { buttons: ['apply', 'reset'], suppressMiniFilter: false },
+      filter: 'agTextColumnFilter',
+      filterParams: textFilterParams,
     },
     {
       field: 'name',
       flex: 1,
       minWidth: 200,
-      filter: 'agSetColumnFilter',
-      sortable: true,
-      resizable: true,
-      filterParams: { buttons: ['apply', 'reset'], suppressMiniFilter: false },
+      filter: 'agTextColumnFilter',
+      filterParams: textFilterParams,
     },
     {
       field: 'qty',
       width: 110,
-      editable: p => p.data!.level === 'Component',
-      valueParser: p => Number(p.newValue || 0),
+      editable: p => p.data?.level === 'Component',
       filter: 'agNumberColumnFilter',
-      filterParams: {
-        buttons: ['apply', 'reset'],
-        alwaysShowBothConditions: true,
-        defaultJoinOperator: 'AND',
-      },
+      filterParams: numberFilterParams,
+      valueParser: p => Number(p.newValue || 0),
     },
     {
       field: 'netWt',
       headerName: 'Net Wt',
       width: 120,
-      editable: p => p.data!.level === 'Component',
-      valueParser: p => Number(p.newValue || 0),
+      editable: p => p.data?.level === 'Component',
       filter: 'agNumberColumnFilter',
-      filterParams: {
-        buttons: ['apply', 'reset'],
-        alwaysShowBothConditions: true,
-        defaultJoinOperator: 'AND',
-      },
+      filterParams: numberFilterParams,
+      valueParser: p => Number(p.newValue || 0),
     },
     {
       field: 'rate',
       headerName: 'Rate/Kg',
       width: 120,
-      editable: p => p.data!.level === 'Component',
-      valueParser: p => Number(p.newValue || 0),
+      editable: p => p.data?.level === 'Component',
       filter: 'agNumberColumnFilter',
-      filterParams: {
-        buttons: ['apply', 'reset'],
-        alwaysShowBothConditions: true,
-        defaultJoinOperator: 'AND',
-      },
+      filterParams: numberFilterParams,
+      valueParser: p => Number(p.newValue || 0),
     },
     {
       field: 'totalCost',
       headerName: 'Total Cost',
       width: 150,
-      valueGetter: p => p.data!.totalCost !== '' ? Number(p.data!.totalCost).toFixed(2) : '',
       filter: 'agNumberColumnFilter',
-      filterParams: {
-        buttons: ['apply', 'reset'],
-        alwaysShowBothConditions: true,
-        defaultJoinOperator: 'AND',
-      },
+      filterParams: numberFilterParams,
+      valueFormatter: p =>
+        typeof p.value === 'number' ? p.value.toFixed(2) : '',
     },
   ], []);
 
@@ -124,63 +137,85 @@ const RfqHierarchyGrid = () => {
     floatingFilter: true,
   }), []);
 
-  const getRowStyle = (params: RowClassParams<RfqRow>): RowStyle | undefined => {
-    if (params.data?.level === 'Panel') return { fontWeight: '700', backgroundColor: '#eef3ff' };
-    if (params.data?.level === 'DieGroup') return { fontWeight: '600', backgroundColor: '#f7f9fc' };
+  /* ---------------- STYLES ---------------- */
+
+  const getRowStyle = (
+    params: RowClassParams<RfqRow>
+  ): RowStyle | undefined => {
+    if (params.data?.level === 'Panel') {
+      return {
+        fontWeight: '700',
+        backgroundColor: '#eef3ff',
+      };
+    }
+    if (params.data?.level === 'DieGroup') {
+      return {
+        fontWeight: '600',
+        backgroundColor: '#f7f9fc',
+      };
+    }
     return undefined;
   };
 
+  /* ---------------- CALCULATIONS ---------------- */
+
   const recalcTotals = (rows: RfqRow[]) => {
-    const hf = hfRef.current;
-    const sheetId = sheetIdRef.current;
-    if (!hf || sheetId === null) return;
-
-    hf.clearSheet(sheetId);
-    hf.setSheetContent(sheetId, rowsToSheet(rows));
-
-    // Component totalCost = qty * netWt * rate
-    rows.forEach((r, i) => {
+    // component totals
+    rows.forEach(r => {
       if (r.level === 'Component') {
-        hf.setCellContents({ sheet: sheetId, row: i, col: 3 }, `=A${i + 1}*B${i + 1}*C${i + 1}`);
+        const qty = Number(r.qty || 0);
+        const netWt = Number(r.netWt || 0);
+        const rate = Number(r.rate || 0);
+        r.totalCost = qty * netWt * rate;
+      } else {
+        r.totalCost = '';
       }
     });
 
-    // DieGroup totals
+    // die group totals
+    let currentGroup: RfqRow | null = null;
     let sum = 0;
-    let currentGroupIndex = -1;
-    rows.forEach((r, i) => {
+
+    for (const r of rows) {
       if (r.level === 'DieGroup') {
-        if (currentGroupIndex !== -1) rows[currentGroupIndex].totalCost = sum;
-        currentGroupIndex = i;
+        if (currentGroup) currentGroup.totalCost = sum;
+        currentGroup = r;
         sum = 0;
       }
       if (r.level === 'Component') {
-        const val = hf.getCellValue({ sheet: sheetId, row: i, col: 3 }) as number;
-        r.totalCost = val;
-        sum += val;
+        sum += Number(r.totalCost || 0);
       }
-      if (r.level === 'Panel' && currentGroupIndex !== -1) {
-        rows[currentGroupIndex].totalCost = sum;
+      if (r.level === 'Panel') {
+        if (currentGroup) currentGroup.totalCost = sum;
+        currentGroup = null;
         sum = 0;
       }
-    });
+    }
+    if (currentGroup) currentGroup.totalCost = sum;
 
+    // panel total
     const panel = rows.find(r => r.level === 'Panel');
     if (panel) {
       panel.totalCost = rows
         .filter(r => r.level === 'DieGroup')
         .reduce((a, b) => a + Number(b.totalCost || 0), 0);
     }
+  };
 
-    setRowData([...rows]);
+  /* ---------------- EVENTS ---------------- */
+
+  const onCellValueChanged = () => {
+    const updated = [...rowData];
+    recalcTotals(updated);
+    setRowData(updated);
     gridRef.current?.api.refreshCells({ force: true });
   };
 
-  const onCellValueChanged = () => recalcTotals([...rowData]);
+  /* ---------------- RENDER ---------------- */
 
   return (
     <div className="rfq-page">
-      <div className="rfq-grid-wrapper ag-theme-alpine" style={{ height: 500 }}>
+      <div className="rfq-grid-wrapper ag-theme-alpine">
         <AgGridReact<RfqRow>
           ref={gridRef}
           rowData={rowData}
@@ -188,8 +223,8 @@ const RfqHierarchyGrid = () => {
           defaultColDef={defaultColDef}
           getRowStyle={getRowStyle}
           onCellValueChanged={onCellValueChanged}
-          animateRows
           suppressRowClickSelection
+          animateRows
         />
       </div>
     </div>
