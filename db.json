@@ -1,31 +1,25 @@
 {
-  "rows": [
+  "plants": [
     {
       "id": 1,
-      "path": ["Parent 1"],
-      "seq": 1,
-      "col1": 100,
-      "col2": 2,
-      "col3": 50,
-      "imageUrl": "https://picsum.photos/50?1"
+      "plant": "Plant 1",
+      "path": ["Plant 1"],
+      "productionCost": 0,
+      "quantity": 1
     },
     {
       "id": 2,
-      "path": ["Parent 1", "Child A"],
-      "seq": 2,
-      "col1": 20,
-      "col2": 3,
-      "col3": 10,
-      "imageUrl": "https://picsum.photos/50?2"
+      "plant": "Department 1",
+      "path": ["Plant 1", "Department 1"],
+      "productionCost": 100,
+      "quantity": 2
     },
     {
       "id": 3,
-      "path": ["Parent 1", "Child B", "Raw Material"],
-      "seq": 3,
-      "col1": 5,
-      "col2": 10,
-      "col3": 2,
-      "imageUrl": "https://picsum.photos/50?3"
+      "plant": "Raw Material",
+      "path": ["Plant 1", "Department 1", "Raw Material"],
+      "productionCost": 50,
+      "quantity": 3
     }
   ]
 }
