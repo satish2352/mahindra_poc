@@ -2,7 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { AgGridReact } from "ag-grid-react";
 
-import type { ColDef, GetRowIdFunc } from "ag-grid-community";
+import type {
+  ColDef,
+  GetRowIdFunc,
+  ICellRendererParams,
+} from "ag-grid-community";
 
 import {
   ModuleRegistry,
@@ -18,16 +22,18 @@ import {
   ColumnsToolPanelModule,
   RangeSelectionModule,
   FormulaModule,
+  ClipboardModule,
 } from "ag-grid-enterprise";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
-/* ================= MODULE REGISTRATION ================= */
+
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   TextEditorModule,
   NumberEditorModule,
+  ClipboardModule,
   RowGroupingModule,
   ExcelExportModule,
   MenuModule,
@@ -36,23 +42,41 @@ ModuleRegistry.registerModules([
   FormulaModule,
 ]);
 
-/* ================= TYPES ================= */
+/* ================= IMAGE RENDERER ================= */
+const ImageRenderer: React.FC<ICellRendererParams> = (props) => {
+  // ✅ SHOW IMAGE ONLY FOR REAL DATA ROWS
+  if (!props.data || !props.data.plant) return null;
+
+  return (
+    <img
+      src={props.value as string}
+      width={36}
+      height={36}
+      style={{ objectFit: "cover", borderRadius: 4 }}
+      loading="lazy"
+      alt=""
+    />
+  );
+};
+
+
 interface PlantRowData {
   id: number;
-  plant: string;
+  plant: string | null;
   path: string[];
-  productionCost: number;
-  quantity: number;
-  totalCost?: number;
+  productionCost: number | null;
+  quantity: number | null;
+  totalCost?: number | null;
+  image?: string;
   [key: string]: any;
 }
 
-/* ================= COMPONENT ================= */
+
 const MahindraPlantGrid: React.FC = () => {
   const gridRef = useRef<AgGridReact<PlantRowData>>(null);
   const [rowData, setRowData] = useState<PlantRowData[]>([]);
 
-  /* ================= LOAD FROM db.json ================= */
+ 
   useEffect(() => {
     fetch("http://localhost:3001/plants")
       .then(res => res.json())
@@ -60,34 +84,53 @@ const MahindraPlantGrid: React.FC = () => {
         const rows: PlantRowData[] = [];
         let id = 1;
 
-        while (rows.length < 1000) {
-          for (const base of baseData) {
-            if (rows.length >= 1000) break;
+        const DATA_ROWS = 3;
+        const TOTAL_ROWS = 1000;
 
-            rows.push({
-              ...base,
-              id: id++,
-              col_1: null,
-              col_2: null,
-              col_3: null,
-            });
+        const createEmptyCols = () => {
+          const obj: Record<string, null> = {};
+          for (let i = 1; i <= 200; i++) {
+            obj[`col_${i}`] = null;
           }
+          return obj;
+        };
+
+        for (const base of baseData) {
+          if (rows.length >= DATA_ROWS) break;
+
+          rows.push({
+            ...base,
+            ...createEmptyCols(),
+            id: id++,
+            path: [],
+            image: import.meta.env.BASE_URL + "src/images/building.jpg",
+          });
+        }
+
+        while (rows.length < TOTAL_ROWS) {
+          rows.push({
+            id: id++,
+            plant: null,
+            productionCost: null,
+            quantity: null,
+            totalCost: null,
+            path: [],
+            image: import.meta.env.BASE_URL + "src/images/building.jpg",
+            ...createEmptyCols(),
+          });
         }
 
         setRowData(rows);
       });
   }, []);
 
-  /* ================= COLUMNS ================= */
+
   const columnDefs = useMemo<ColDef[]>(() => {
     const cols: ColDef[] = [
-
-      /* ✅ EXCEL-LIKE ROW NUMBERING (ONLY ADDITION) */
       {
         headerName: "",
         pinned: "left",
         width: 70,
-        // suppressMenu: true,
         sortable: false,
         filter: false,
         editable: false,
@@ -95,14 +138,27 @@ const MahindraPlantGrid: React.FC = () => {
           params.node ? params.node.rowIndex! + 1 : "",
       },
 
+      // ✅ IMAGE COLUMN (UNCHANGED)
+      {
+        headerName: "Image",
+        field: "image",
+        pinned: "left",
+        width: 80,
+        sortable: false,
+        filter: false,
+        editable: false,
+        cellRenderer: ImageRenderer,
+      },
+
       {
         field: "plant",
         headerName: "Plant / BOM",
         pinned: "left",
-        editable: false,
         minWidth: 260,
         rowDrag: true,
         cellRenderer: "agGroupCellRenderer",
+        editable: true,
+        cellEditor: "agTextCellEditor",
       },
       {
         field: "productionCost",
@@ -122,6 +178,7 @@ const MahindraPlantGrid: React.FC = () => {
         field: "totalCost",
         headerName: "Total Cost (Formula)",
         allowFormula: true,
+        editable: true,
         valueGetter: "=productionCost * quantity",
         aggFunc: "sum",
       },
@@ -133,7 +190,7 @@ const MahindraPlantGrid: React.FC = () => {
           field: "col_200",
           headerName: "C200 (Formula)",
           allowFormula: true,
-          editable: false,
+          editable: true,
           valueGetter: "=(col_1 * col_2) + col_3",
           width: 140,
         });
@@ -141,7 +198,7 @@ const MahindraPlantGrid: React.FC = () => {
         cols.push({
           field: `col_${i}`,
           headerName: `C${i}`,
-          editable: i <= 3,
+          editable: true,
           cellEditor: "agNumberCellEditor",
           width: 120,
         });
@@ -176,14 +233,23 @@ const MahindraPlantGrid: React.FC = () => {
         defaultColDef={defaultColDef}
         getRowId={getRowId}
 
+        components={{ ImageRenderer }}
+
         enableCellExpressions
         valueCache
 
-        singleClickEdit
-        stopEditingWhenCellsLoseFocus
         enableRangeSelection
         enableFillHandle
         undoRedoCellEditing
+        singleClickEdit
+
+        suppressClipboardPaste={false}
+
+        processCellFromClipboard={(params) => {
+          if (params.value == null || params.value === "") return null;
+          const num = Number(String(params.value).replace(/,/g, ""));
+          return isNaN(num) ? params.value : num;
+        }}
 
         treeData
         getDataPath={(d) => d.path}
@@ -194,6 +260,7 @@ const MahindraPlantGrid: React.FC = () => {
         animateRows
         rowSelection="multiple"
         sideBar
+        rowHeight={44}
       />
     </div>
   );
@@ -201,6 +268,6 @@ const MahindraPlantGrid: React.FC = () => {
 
 export default MahindraPlantGrid;
 
-/* ================= RENDER ================= */
+
 const root = createRoot(document.getElementById("root")!);
 root.render(<MahindraPlantGrid />);
