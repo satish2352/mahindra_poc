@@ -1,60 +1,31 @@
 {
-  "rfqRows": [
+  "rows": [
     {
-      "level": "Panel",
-      "name": "P1",
-      "qty": "",
-      "netWt": "",
-      "rate": "",
-      "totalCost": ""
+      "id": 1,
+      "path": ["Parent 1"],
+      "seq": 1,
+      "col1": 100,
+      "col2": 2,
+      "col3": 50,
+      "imageUrl": "https://picsum.photos/50?1"
     },
     {
-      "level": "DieGroup",
-      "name": "DG-01",
-      "qty": "",
-      "netWt": "",
-      "rate": "",
-      "totalCost": ""
+      "id": 2,
+      "path": ["Parent 1", "Child A"],
+      "seq": 2,
+      "col1": 20,
+      "col2": 3,
+      "col3": 10,
+      "imageUrl": "https://picsum.photos/50?2"
     },
     {
-      "level": "Component",
-      "name": "Base Plate",
-      "qty": 2,
-      "netWt": 12.5,
-      "rate": 180,
-      "totalCost": 0
-    },
-    {
-      "level": "Component",
-      "name": "Guide Bush",
-      "qty": 4,
-      "netWt": 1.2,
-      "rate": 220,
-      "totalCost": 0
-    },
-    {
-      "level": "DieGroup",
-      "name": "DG-02",
-      "qty": "",
-      "netWt": "",
-      "rate": "",
-      "totalCost": ""
-    },
-    {
-      "level": "Component",
-      "name": "Punch",
-      "qty": 6,
-      "netWt": 0.8,
-      "rate": 300,
-      "totalCost": 0
-    },
-    {
-      "level": "Component",
-      "name": "Die Insert",
-      "qty": 2,
-      "netWt": 5.0,
-      "rate": 260,
-      "totalCost": 0
+      "id": 3,
+      "path": ["Parent 1", "Child B", "Raw Material"],
+      "seq": 3,
+      "col1": 5,
+      "col2": 10,
+      "col3": 2,
+      "imageUrl": "https://picsum.photos/50?3"
     }
   ]
 }
