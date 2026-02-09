@@ -1,4 +1,4 @@
- import RfqHierarchyGrid from './components/aggridsample/RfqHierarchyGrid';
+ import RfqHierarchyGrid from './components/aggridsample/MahindraPlantGrid';
 
 
 const App: React.FC = () => {

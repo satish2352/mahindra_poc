@@ -1,0 +1,59 @@
+/* ============================= */
+/* Excel-style Grid Look & Feel  */
+/* ============================= */
+
+/* Light green Excel background */
+.ag-theme-alpine {
+  --ag-background-color: #e9f5e9;
+  --ag-odd-row-background-color: #eef9ee;
+  --ag-header-background-color: #d6efd6;
+  --ag-row-hover-color: #cfe9cf;
+  --ag-selected-row-background-color: #b7ddb7;
+  font-family: Calibri, Arial, sans-serif;
+}
+
+/* Strong vertical & horizontal grid lines */
+.ag-theme-alpine .ag-cell {
+  border-right: 1px solid #7fbf7f !important;
+  border-bottom: 1px solid #7fbf7f !important;
+}
+
+/* Header borders */
+.ag-theme-alpine .ag-header-cell {
+  border-right: 1px solid #5aa05a !important;
+  border-bottom: 2px solid #4d8f4d !important;
+  font-weight: 600;
+}
+
+/* Left pinned columns separator */
+.ag-theme-alpine .ag-pinned-left-cols-container {
+  border-right: 2px solid #4d8f4d;
+}
+
+/* Row number / pinned cells look */
+.ag-theme-alpine .ag-cell.ag-cell-first-right-pinned,
+.ag-theme-alpine .ag-cell.ag-cell-first-left-pinned {
+  background-color: #def1de;
+  font-weight: 500;
+}
+
+/* Make grid lines crisp */
+.ag-theme-alpine .ag-root-wrapper {
+  border: 2px solid #4d8f4d;
+}
+
+/* Editable cell focus (Excel-like active cell) */
+.ag-theme-alpine .ag-cell-focus {
+  border: 2px solid #2e7d32 !important;
+  background-color: #ffffff;
+}
+
+/* Header text alignment */
+.ag-theme-alpine .ag-header-cell-label {
+  justify-content: center;
+}
+
+/* Remove rounded Alpine look */
+.ag-theme-alpine .ag-root-wrapper {
+  border-radius: 0;
+}
