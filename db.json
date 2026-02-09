@@ -1,3 +1,4 @@
+
 {
   "plants": [
     {
@@ -5,21 +6,24 @@
       "plant": "Plant 1",
       "path": ["Plant 1"],
       "productionCost": 0,
-      "quantity": 1
+      "quantity": 1,
+      "extraCost": 10
     },
     {
       "id": 2,
       "plant": "Department 1",
       "path": ["Plant 1", "Department 1"],
       "productionCost": 100,
-      "quantity": 2
+      "quantity": 2,
+      "extraCost": 20
     },
     {
       "id": 3,
       "plant": "Raw Material",
       "path": ["Plant 1", "Department 1", "Raw Material"],
       "productionCost": 50,
-      "quantity": 3
+      "quantity": 3,
+      "extraCost": 15
     }
   ]
 }
