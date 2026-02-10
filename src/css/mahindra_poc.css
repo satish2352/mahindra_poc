@@ -1,6 +1,3 @@
-/* ============================= */
-/* Excel-style Grid Look & Feel  */
-/* ============================= */
 
 /* Light green Excel background */
 .ag-theme-alpine {
@@ -56,4 +53,53 @@
 /* Remove rounded Alpine look */
 .ag-theme-alpine .ag-root-wrapper {
   border-radius: 0;
+}
+
+
+
+
+/* Ensure menu floats above grid */
+.ag-theme-alpine .ag-menu {
+  z-index: 9999 !important;
+  background-color: #ffffff !important; /* solid background */
+  opacity: 1 !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); /* strong shadow */
+  border-radius: 6px;
+}
+
+/* Menu items */
+.ag-theme-alpine .ag-menu-option {
+  opacity: 1 !important;
+  font-weight: 500;
+  background-color: #ffffff;
+}
+
+/* Hover state */
+.ag-theme-alpine .ag-menu-option:hover,
+.ag-theme-alpine .ag-menu-option-active {
+  background-color: #e6f0ff !important;
+}
+
+/* Menu text */
+.ag-theme-alpine .ag-menu-option-text {
+  color: #111 !important;
+  font-size: 14px;
+}
+
+
+/* Insert row */
+.ag-theme-alpine .menu-insert {
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Delete row – danger */
+.ag-theme-alpine .menu-delete {
+  color: #d32f2f !important;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.ag-theme-alpine .menu-delete:hover {
+  background-color: #fdecea !important;
 }

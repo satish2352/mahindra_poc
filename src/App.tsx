@@ -3,7 +3,7 @@
 
 const App: React.FC = () => {
   return (
-    <div style={{ width: '100vw', padding: 0, margin: 0 }}>
+    <div style={{ height: '100vh', width: '100vw' }}>
       <RfqHierarchyGrid />
     </div>
   );
