@@ -6,7 +6,6 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import 'flag-icons/css/flag-icons.min.css';
 
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
