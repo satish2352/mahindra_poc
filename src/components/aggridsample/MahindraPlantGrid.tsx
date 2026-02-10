@@ -348,6 +348,21 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AgGridReact } from "ag-grid-react";
+import { RowSelectionModule } from "ag-grid-community";
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  TextEditorModule,
+  NumberEditorModule,
+  RowDragModule,
+  RowSelectionModule,   // ✅ THIS WAS MISSING
+  ClipboardModule,
+  RowGroupingModule,
+  ExcelExportModule,
+  MenuModule,
+  ColumnsToolPanelModule,
+  RangeSelectionModule,
+  FormulaModule,
+]);
 
 import type {
   ColDef,
@@ -492,19 +507,39 @@ const MahindraPlantGrid: React.FC = () => {
     });
   }, []);
 
+
+
   /* MULTI ROW DELETE */
-  const deleteSelectedRows = useCallback(() => {
-    const selected = gridRef.current?.api.getSelectedNodes() || [];
-    if (!selected.length) return;
+  // const deleteSelectedRows = useCallback(() => {
+  //   const api = gridRef.current?.api;
+  //   if (!api) return;
 
-    const ids = new Set(selected.map((n) => n.data?.id));
+  //   const rows = api.getSelectedRows();
+  //   if (!rows.length) return;
 
-    setRowData((prev) =>
-      prev
-        .filter((r) => !ids.has(r.id))
-        .map((r, i) => ({ ...r, srNo: i + 1 }))
-    );
-  }, []);
+  //   api.applyTransaction({ remove: rows });
+  // }, []);
+
+
+const deleteSelectedRows = useCallback(() => {
+  const api = gridRef.current?.api;
+  if (!api) return;
+
+  const selectedNodes = api.getSelectedNodes();
+  if (!selectedNodes.length) return;
+
+  const selectedIds = new Set(
+    selectedNodes.map((n) => n.data?.id)
+  );
+
+  setRowData((prev) =>
+    prev
+      .filter((r) => !selectedIds.has(r.id))
+      .map((r, i) => ({ ...r, srNo: i + 1 }))
+  );
+}, []);
+
+
 
   const insertRowBelowNode = useCallback((node: any) => {
     if (!node?.data) return;
@@ -612,51 +647,61 @@ const MahindraPlantGrid: React.FC = () => {
   return (
     <div style={{ width: "100%", height: "100vh" }} className="ag-theme-alpine">
       <AgGridReact<PlantRowData>
-  ref={gridRef}
-  rowData={rowData}
-  columnDefs={columnDefs}
-  defaultColDef={defaultColDef}
-  getRowId={getRowId}
-  components={{ ImageRenderer }}
-  onRowDragEnd={onRowDragEnd}
 
-  treeData
-  getDataPath={(d) => d.path}
-  groupDefaultExpanded={-1}
-  grandTotalRow="bottom"
+        ref={gridRef}
+        rowData={rowData}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        getRowId={getRowId}
+        components={{ ImageRenderer }}
+        onRowDragEnd={onRowDragEnd}
 
-  /* ✅ REQUIRED FOR TREE DATA SELECTION */
-  isRowSelectable={() => true}
-  groupSelectsChildren={true}
+        treeData
+        getDataPath={(d) => d.path}
+        groupDefaultExpanded={-1}
+        grandTotalRow="bottom"
 
-  /* ✅ NEW SELECTION API */
-  rowSelection={{
-    mode: "multiRow",
-    enableClickSelection: false,
-  }}
+        isRowSelectable={() => true}
+        suppressRowClickSelection={true}
 
-  enableRangeSelection
-  undoRedoCellEditing
-  singleClickEdit
-  animateRows
-  sideBar
-  rowHeight={44}
+        rowSelection={{
+          mode: "multiRow",
+          groupSelects: "descendants",
+          enableClickSelection: false,
+        }}
+        enableRangeSelection
+        undoRedoCellEditing
+        singleClickEdit
+        animateRows
+        sideBar
+        rowHeight={44}
 
-  getContextMenuItems={(params) => [
-    { name: "Insert Row Below", action: () => insertRowBelowNode(params.node) },
-    { name: "Delete Selected Rows", action:() => deleteSelectedRows() },
-    "separator",
-    "copy",
-    "paste",
-  ]}
 
-  onCellKeyDown={(e) => {
-    const k = e.event as KeyboardEvent | null;
-    if (k?.key === "Delete" || k?.key === "Backspace") {
-      deleteSelectedRows();
-    }
-  }}
-/>
+        onCellContextMenu={(params) => {
+          if (!params.node) return;
+          const api = params.api;
+          if (!params.node.isSelected()) {
+            api.deselectAll();
+            params.node.setSelected(true);
+          }
+        }}
+
+        getContextMenuItems={(params) => [
+          { name: "Insert Row Below", action: () => insertRowBelowNode(params.node) },
+          { name: "Delete Selected Rows", action: () => deleteSelectedRows() },
+          "separator",
+          "copy",
+          "paste",
+        ]}
+
+        onCellKeyDown={(e) => {
+          const k = e.event as KeyboardEvent | null;
+          if (k?.key === "Delete" || k?.key === "Backspace") {
+            deleteSelectedRows();
+          }
+        }}
+      />
+
 
     </div>
   );
