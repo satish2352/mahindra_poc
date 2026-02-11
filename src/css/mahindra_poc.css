@@ -103,3 +103,54 @@
 .ag-theme-alpine .menu-delete:hover {
   background-color: #fdecea !important;
 }
+
+
+/* Overlay */
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Container */
+.image-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Image */
+.image-preview-img {
+  max-width: 80vw;
+  max-height: 80vh;
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Circular Close Button */
+.image-preview-close {
+  position: absolute;
+  top: -18px;   /* pushes outside */
+  right: -18px; /* pushes outside */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  color: #333;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+/* Hover Effect */
+.image-preview-close:hover {
+  background: #ff4d4f;
+  color: #fff;
+  transform: scale(1.1);
+}

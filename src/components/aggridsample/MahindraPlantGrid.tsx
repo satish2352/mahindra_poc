@@ -3,7 +3,7 @@ import { AgGridReact } from "ag-grid-react";
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import 'flag-icons/css/flag-icons.min.css';
-
+import "../../css/mahindra_poc.css";
 
 import type {
   ColDef,
@@ -31,9 +31,6 @@ import {
   ClipboardModule,
 } from "ag-grid-enterprise";
 
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
-import "../../css/mahindra_poc.css";
 
 
 ModuleRegistry.registerModules([
@@ -52,22 +49,37 @@ ModuleRegistry.registerModules([
 ]);
 
 
+
+
 const ImageRenderer: React.FC<ICellRendererParams> = (props) => {
+
   const src =
     (props.value as string) ||
     import.meta.env.BASE_URL + "src/images/building.jpg";
+
+  const openPreview = () => {
+    if (props.context?.setPreviewImage) {
+      props.context.setPreviewImage(src);
+    }
+  };
 
   return (
     <img
       src={src}
       width={25}
       height={25}
-      style={{ objectFit: "cover", borderRadius: 4 }}
+      style={{
+        objectFit: "cover",
+        borderRadius: 4,
+        cursor: "pointer",
+      }}
       loading="lazy"
       alt=""
+      onClick={openPreview}
     />
   );
 };
+
 
 interface PlantRowData {
   id: number;
@@ -85,6 +97,8 @@ interface PlantRowData {
 const MahindraPlantGrid: React.FC = () => {
   const gridRef = useRef<AgGridReact<PlantRowData>>(null);
   const [rowData, setRowData] = useState<PlantRowData[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
 
 
   const createEmptyCols = () => {
@@ -134,7 +148,6 @@ const MahindraPlantGrid: React.FC = () => {
 
           setRowData(rows);
 
-
           setTimeout(() => {
             gridRef.current?.api.hideOverlay();
           }, 0);
@@ -142,23 +155,87 @@ const MahindraPlantGrid: React.FC = () => {
       });
   }, []);
 
+  const exportToExcel = useCallback(() => {
+    const api = gridRef.current?.api;
+    if (!api) return;
 
-  const onRowDragEnd = useCallback((event: RowDragEndEvent) => {
-    const moving = event.node?.data;
-    const over = event.overNode?.data;
-    if (!moving || !over) return;
-
-    setRowData((prev) => {
-      const updated = [...prev];
-      const fromIndex = updated.findIndex((r) => r.id === moving.id);
-      const toIndex = updated.findIndex((r) => r.id === over.id);
-      if (fromIndex === -1 || toIndex === -1) return prev;
-
-      const [row] = updated.splice(fromIndex, 1);
-      updated.splice(toIndex, 0, row);
-      return updated.map((r, i) => ({ ...r, srNo: i + 1 }));
+    api.exportDataAsExcel({
+      fileName: "Mahindra_Plant_Data.xlsx",
+      sheetName: "Plant Data",
+      allColumns: true,
     });
   }, []);
+
+
+  const rollupCost = useCallback((node: any) => {
+    if (!node) return;
+
+    const data = node.data;
+    if (!data) return;
+
+    // Calculate current row total
+    const pc = Number(data.productionCost) || 0;
+    const q = Number(data.quantity) || 0;
+    const ec = Number(data.extraCost) || 0;
+
+    const rowTotal = pc * q + ec;
+
+    data.totalCost = rowTotal;
+    node.setDataValue("totalCost", rowTotal);
+
+    // Move upward
+    let parent = node.parent;
+
+    while (parent && parent.data) {
+      let sum = 0;
+
+      parent.childrenAfterGroup?.forEach((child: any) => {
+        const childTotal = Number(child.data?.totalCost) || 0;
+        sum += childTotal;
+      });
+
+      parent.data.totalCost = sum;
+      parent.setDataValue("totalCost", sum);
+
+      parent = parent.parent;
+    }
+  }, []);
+
+
+
+  const onRowDragEnd = useCallback((event: RowDragEndEvent) => {
+    const api = gridRef.current?.api;
+    if (!api) return;
+
+    const movingNodes = api.getSelectedNodes().length
+      ? api.getSelectedNodes()
+      : [event.node];
+
+    const overNode = event.overNode;
+    if (!overNode) return;
+
+    const movingIds = new Set(
+      movingNodes.map((n) => n.data?.id)
+    );
+
+    setRowData((prev) => {
+      const remaining = prev.filter((r) => !movingIds.has(r.id));
+
+      const overIndex = remaining.findIndex(
+        (r) => r.id === overNode.data?.id
+      );
+
+      const movingRows = prev.filter((r) => movingIds.has(r.id));
+
+      remaining.splice(overIndex, 0, ...movingRows);
+
+      return remaining.map((r, i) => ({
+        ...r,
+        srNo: i + 1,
+      }));
+    });
+  }, []);
+
 
 
   const deleteSelectedRows = useCallback(() => {
@@ -173,7 +250,6 @@ const MahindraPlantGrid: React.FC = () => {
         .map((n) => n.data?.id)
         .filter((id): id is number => id !== undefined)
     );
-
 
     setRowData((prev) =>
       prev
@@ -210,33 +286,46 @@ const MahindraPlantGrid: React.FC = () => {
   const columnDefs = useMemo<ColDef[]>(() => {
     const cols: ColDef[] = [
       {
-        headerName: "",
+        headerName: "Sr.No",
         pinned: "left",
-        width: 70,
-         checkboxSelection: true,
-         headerCheckboxSelection: true,
+        width: 110,
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
+        rowDrag: true,
         valueGetter: (p) => p.data?.srNo ?? "",
       },
       {
         headerName: "Image",
         field: "image",
-        pinned: "left",
-        width: 80,
-        editable: false,
+        // pinned: "left",
+         width: 90,
+        // editable: false,
         cellRenderer: ImageRenderer,
       },
       {
         field: "plant",
         headerName: "Plant / BOM",
-        pinned: "left",
-        minWidth: 260,
-        rowDrag: true,
-        cellRenderer: "agGroupCellRenderer",
-        editable: true,
+        // pinned: "left",
+        // minWidth: 260,
+        // cellRenderer: "agGroupCellRenderer",
+        // editable: true,
       },
       { field: "productionCost", headerName: "Production Cost" },
       { field: "quantity", headerName: "Qty" },
       { field: "extraCost", headerName: "Extra Cost" },
+      // {
+      //   field: "totalCost",
+      //   headerName: "Total Cost",
+      //   editable: false,
+      //   valueGetter: (p) => {
+      //     const pc = Number(p.data?.productionCost) || 0;
+      //     const q = Number(p.data?.quantity) || 0;
+      //     const ec = Number(p.data?.extraCost) || 0;
+      //     return pc * q + ec;
+      //   },
+      // },
+
+
     ];
 
     for (let i = 1; i <= 200; i++) {
@@ -257,13 +346,14 @@ const MahindraPlantGrid: React.FC = () => {
             const ec = Number(p.data?.extraCost) || 0;
             return pc * q + ec;
           },
-          aggFunc: "sum",
+          // aggFunc: "sum",
         }),
       });
     }
 
     return cols;
   }, []);
+
 
   const defaultColDef = useMemo<ColDef>(
     () => ({
@@ -281,76 +371,123 @@ const MahindraPlantGrid: React.FC = () => {
   );
 
   return (
-    <div className="ag-theme-alpine" style={{ width: "100%", height: "100vh" }}>
-      <AgGridReact<PlantRowData>
-        ref={gridRef}
-        rowData={rowData}
-        columnDefs={columnDefs}
-        defaultColDef={defaultColDef}
-        getRowId={getRowId}
+    <>
+      <div className="ag-theme-alpine" style={{ width: "100%", height: "100vh" }}>
+        <AgGridReact<PlantRowData>
+          ref={gridRef}
+          rowData={rowData}
+          columnDefs={columnDefs}
+          defaultColDef={defaultColDef}
+          getRowId={getRowId}
+          context={{ setPreviewImage }}
+          groupDisplayType="custom"
 
-        enableRangeSelection={true}
-        enableFillHandle={true}
-        undoRedoCellEditing={true}
-        suppressClipboardPaste={false}
+          enableRangeSelection={true}
+          enableFillHandle={true}
+          undoRedoCellEditing={true}
+          suppressClipboardPaste={false}
 
-        components={{ ImageRenderer }}
-        overlayLoadingTemplate={
-          '<span class="ag-overlay-loading-center">Loading data…</span>'
-        }
-        onGridReady={(p) => p.api.showLoadingOverlay()}
-        treeData
-        getDataPath={(d) => d.path}
-        groupDefaultExpanded={0}
-        rowSelection={{
-          mode: "multiRow",
-          enableClickSelection: false,
-          checkboxes:false,
-          
-          
-
-        }}
-        
-        // singleClickEdit
-        animateRows
-        sideBar
-        suppressRowVirtualisation={false}
-        suppressColumnVirtualisation={false}
-        rowBuffer={10}
-        onRowDragEnd={onRowDragEnd}
-        getContextMenuItems={(params) => [
-          {
-            name: "Insert Row Below",
-            cssClasses: ["menu-insert"],
-            action: () => insertRowBelowNode(params.node),
-          },
-          {
-            name: "Delete Selected Rows",
-            cssClasses: ["menu-delete"],
-            action: () => deleteSelectedRows(),
-          },
-          "separator",
-          "copy",
-          "paste",
-        ]}
-
-
-        onCellKeyDown={(params) => {
-          const e = params.event as KeyboardEvent;
-
-          if ((e.ctrlKey || e.metaKey) && e.key === "v") {
-            e.preventDefault();
-            params.api.pasteFromClipboard();
+          components={{ ImageRenderer }}
+          overlayLoadingTemplate={
+            '<span class="ag-overlay-loading-center">Loading data…</span>'
           }
+          onGridReady={(p) => p.api.showLoadingOverlay()}
+          treeData
+          getDataPath={(d) => d.path}
+          groupDefaultExpanded={0}
+          rowSelection={{
+            mode: "multiRow",
+            enableClickSelection: false,
+            checkboxes: false,
+          }}
 
-          if (e.key === "Delete" || e.key === "Backspace") {
-            deleteSelectedRows();
-          }
-        }}
+          animateRows
+          sideBar
+          suppressRowVirtualisation={false}
+          suppressColumnVirtualisation={false}
+          rowBuffer={10}
+          onRowDragEnd={onRowDragEnd}
+          getContextMenuItems={(params) => [
+            {
+              name: "Insert Row Below",
+              cssClasses: ["menu-insert"],
+              action: () => insertRowBelowNode(params.node),
+            },
+            {
+              name: "Delete Selected Rows",
+              cssClasses: ["menu-delete"],
+              action: () => deleteSelectedRows(),
+            },
+            {
+              name: "Export to Excel",
+              action: () => exportToExcel(),
+            },
+            "separator",
+            "copy",
+            "paste",
+          ]}
 
-      />
-    </div>
+          onCellValueChanged={(params) => {
+            if (
+              params.colDef.field === "productionCost" ||
+              params.colDef.field === "quantity" ||
+              params.colDef.field === "extraCost"
+            ) {
+              rollupCost(params.node);
+            }
+          }}
+
+
+          onCellKeyDown={(params) => {
+            const e = params.event as KeyboardEvent;
+
+            if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+              e.preventDefault();
+              params.api.pasteFromClipboard();
+            }
+
+            if (e.key === "Delete" || e.key === "Backspace") {
+              deleteSelectedRows();
+            }
+          }}
+
+
+        />
+
+      </div>
+      {previewImage && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <img
+            src={previewImage}
+            style={{
+              maxWidth: "80%",
+              maxHeight: "80%",
+              borderRadius: 8,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+            }}
+            alt=""
+          />
+        </div>
+      )}
+
+    </>
+
   );
+
 };
 
 export default MahindraPlantGrid;
